@@ -30,6 +30,11 @@ echo is_string($result) ? $result : $result['text'] . PHP_EOL;
 
 Keep `RUNAPI_API_KEY` in the environment or your secret manager.
 
+The result is an array for JSON response formats and a string for text or
+subtitle formats, whether the request completes directly or through an accepted
+Task. Use `subscribe()` to observe Task updates; terminal text, SRT, and VTT
+results remain strings.
+
 ## Links
 
 - Model page: https://runapi.ai/models/openai-transcription
