@@ -38,4 +38,19 @@ final class OpenaiTranscriptionClientTest extends TestCase
         self::assertSame(['text' => 'hello'], $client->speechToText->run($audio));
         self::assertStringContainsString("\r\nwhisper-1\r\n", (string) $transport->requests[0]->getBody());
     }
+
+    public function testFollowsAcceptedTaskAndPreservesVttTerminalBody(): void
+    {
+        $audio = tempnam(sys_get_temp_dir(), 'runapi-audio-') . '.wav';
+        file_put_contents($audio, 'audio');
+        $transport = new QueueHttpClient([
+            new Response(202, ['Location' => '/api/v1/tasks/task_123/result', 'Retry-After' => '0'], '{"id":"task_123","status":"processing"}'),
+            new Response(200, [], '{"id":"task_123","status":"completed","response":{"status":200,"content_type":"text/vtt","headers":{},"body":"WEBVTT\\n"}}'),
+        ]);
+        $client = new OpenaiTranscriptionClient(new ClientOptions(apiKey: 'k', httpClient: $transport, maxRetries: 0));
+
+        self::assertSame("WEBVTT\n", $client->speechToText->run($audio, ['response_format' => 'vtt']));
+        self::assertNotSame('', $transport->requests[0]->getHeaderLine('Idempotency-Key'));
+        self::assertSame('/api/v1/tasks/task_123/result', $transport->requests[1]->getUri()->getPath());
+    }
 }
