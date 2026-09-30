@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace RunApi\OpenaiTranscription\Resources;
 
 use Generator;
-use RunApi\Core\Contract\ContractValidator;
 use RunApi\Core\Errors\TaskFailedException;
 use RunApi\Core\Http\HttpClient;
 use RunApi\Core\Http\MultipartBody;
@@ -18,7 +17,7 @@ use RunApi\Core\Tasks\HybridTaskUpdate;
 /** Synchronous audio transcription operations. */
 final readonly class SpeechToText
 {
-    public function __construct(private HttpClient $http, private ContractValidator $validator = new ContractValidator())
+    public function __construct(private HttpClient $http)
     {
     }
 
@@ -59,10 +58,8 @@ final readonly class SpeechToText
     /** @param array<string, mixed> $params */
     private function submit(string $file, array $params, ?RequestOptions $options): \RunApi\Core\Http\RawResponse
     {
-        $params['file'] = $file;
-        $params['model'] = isset($params['model']) && is_string($params['model']) && trim($params['model']) !== '' ? $params['model'] : 'whisper-1';
-        $this->validator->validate('openai-transcription/speech-to-text', $params['model'], $params);
         $fields = array_diff_key($params, array_flip(['file', 'languages', 'keywords', 'timestamp_granularities']));
+        $fields['model'] ??= 'whisper-1';
         foreach (['languages', 'keywords', 'timestamp_granularities'] as $name) {
             if (isset($params[$name])) {
                 $fields[$name . '[]'] = $params[$name];
